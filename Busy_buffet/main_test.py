@@ -389,25 +389,90 @@ elif menu == "ร้านยุ่งทุกวันจริงไหม":
 #--------------------------------------------------------------------
 
 elif menu == "queue_table":
+    week_day = ['fri','tues','wed']
 
-    from queue_table import walk_in_duration_avg, in_house_duration_avg
+    week_day_duration = load_combine_duration(file, sheets, week_day)
 
-    # ข้อมูลสำหรับ Bar Chart
-    guest_types = ['Walk-in', 'In-house']
-    avg_durations = [walk_in_duration_avg, in_house_duration_avg]
+    df_plot = week_day_duration[
+        (week_day_duration['duration_hr'] >= 0) &
+        (week_day_duration['duration_hr'] <= 5)
+    ].copy()
 
-    # วาด Bar Chart
-    fig, ax = plt.subplots(figsize=(6,4))
-    ax.bar(guest_types, avg_durations, color=['#2196F3','#4CAF50'])
-    ax.set_ylabel('Average Waiting Duration (min)')
-    ax.set_title('Average Waiting Duration by Guest Type')
-    for i, v in enumerate(avg_durations):
-        ax.text(i, v + 0.5, f"{v:.1f}", ha='center')  # ใส่ตัวเลขด้านบน bar
+    bins = [0,1,2,3,4,5]
+    labels = ['0-1h','1-2h','2-3h','3-4h','4-5h']
 
-    plt.tight_layout()
+    df_plot['duration_bin'] = pd.cut(
+        df_plot['duration_hr'],
+        bins=bins,
+        labels=labels,
+        include_lowest=True
+    )
 
-    # แสดงใน Streamlit
-    st.pyplot(fig)
+    count_data = df_plot['duration_bin'].value_counts().sort_index()
+    count_data = count_data.reindex(labels, fill_value=0)
+
+    st.title("Weekday Customer Duration (0–5 Hours)")
+    st.bar_chart(count_data)
+
+    #สร้าง card แสดง avg_meal_duration_time ใน normal day
+    # โหลดข้อมูล
+    week_day_duration = load_combine_duration(file, sheets, week_day)
+    # คำนวณค่าเฉลี่ย duration
+    weekday_avg = week_day_duration['duration'].mean()  # timedelta
+    # แปลงเป็นชั่วโมง + นาที
+    total_seconds = weekday_avg.total_seconds()
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    # ฟอร์แมตเป็น string
+    avg_str = f"{hours}h {minutes}m"
+    # แสดง card
+    st.title("Customer Meal Duration")
+    st.metric(label="Average Weekday Duration", value=avg_str)
+    #---------------------------------------------------------------------------------------------------------------
+    #---------------------------------------------------------------------------------------------------------------
+    
+    week_end= ['sat','sun']
+
+    week_end_duration = load_combine_duration(file, sheets, week_end)
+
+    df_plot = week_end_duration[
+        (week_end_duration['duration_hr'] >= 0) &
+        (week_end_duration['duration_hr'] <= 5)
+    ].copy()
+
+    bins = [0,1,2,3,4,5]
+    labels = ['0-1h','1-2h','2-3h','3-4h','4-5h']
+
+    df_plot['duration_bin'] = pd.cut(
+        df_plot['duration_hr'],
+        bins=bins,
+        labels=labels,
+        include_lowest=True
+    )
+
+    count_data = df_plot['duration_bin'].value_counts().sort_index()
+    count_data = count_data.reindex(labels, fill_value=0)
+
+    st.title("Weekday Customer Duration (0–5 Hours)")
+    st.bar_chart(count_data)
+
+    #สร้าง card แสดง avg_meal_duration_time ใน normal day
+    # โหลดข้อมูล
+    week_end_duration = load_combine_duration(file, sheets, week_day)
+    # คำนวณค่าเฉลี่ย duration
+    weekend_avg = week_end_duration['duration'].mean()  # timedelta
+    # แปลงเป็นชั่วโมง + นาที
+    total_seconds = weekend_avg.total_seconds()
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    # ฟอร์แมตเป็น string
+    avg_str = f"{hours}h {minutes}m"
+    # แสดง card
+    st.title("Customer Meal Duration week end")
+    st.metric(label="Average Weekend Duration", value=avg_str)
+    #---------------------------------------------------------------------------------------------------------------
+    #---------------------------------------------------------------------------------------------------------------
+
 
 # -------------------------------
 # ควรที่จะให้ลูกค้า In house skip ได้ไหม
